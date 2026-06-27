@@ -149,6 +149,7 @@ function createLeague(name, matches, ranking) {
   }
   html += `
         </table>
+        <a href="#top">▲ トップに戻る</a>
     </section>
     `;
 
@@ -159,8 +160,10 @@ async function main() {
   const filenames = ["S1", "S2", "S3", "S4"];
 
   let table = "";
+  let link = "";
   // 表示したい順番にファイル名を追加します
   for (name of filenames) {
+    link += `<a href="#${name}">${name}リーグ</a><br>`;
     // csvファイル読んでパース
     const matches = parseLeagueFile(`data/${name}.csv`);
     const ranking = getRanking(matches);
@@ -170,6 +173,7 @@ async function main() {
 
   let html = fs.readFileSync("template/index.html", "utf8");
 
+  html = html.replace("{{LINK}}", link);
   html = html.replace("{{TABLE}}", table);
 
   fs.writeFileSync("output/index.html", html);
