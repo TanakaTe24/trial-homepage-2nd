@@ -41,6 +41,7 @@ function getResult(matches, player1, player2) {
   return match.player1 === player1 ? match.result : reverseResult(match.result);
 }
 
+// リーグ結果からランキング順の配列を返却します。
 function getRanking(matches) {
   const players = {};
   for (match of matches) {
@@ -61,8 +62,10 @@ function getRanking(matches) {
     }
   }
   const results = Object.values(players);
+  // 対戦結果からセットカウントによる順位にソート(昇順)します
   results.sort((a, b) => b.win - a.win);
 
+  // 同一セットカウントでグループ分けします
   const groups = new Map();
   for (const result of results) {
     if (!groups.has(result.win)) groups.set(result.win, []);
@@ -74,13 +77,16 @@ function getRanking(matches) {
   for (const group of groups) {
     const players = group[1];
     if (players.length == 0) {
+      // 基本ありえません
       continue;
     }
     if (players.length == 1) {
+      // 1名だけなので、そのまま ranking に追加します
       ranking.push(...players);
       continue;
     }
 
+    // 同一セットカウントのプレイヤーだけで勝ちセットと負けセットの合計でセット取得率を算出します
     const names = new Set(players.map((p) => p.name));
     const ratios = [];
     for (const name of names) {
@@ -99,8 +105,10 @@ function getRanking(matches) {
       }
       ratios.push({ name: name, ratio: win / lose });
     }
+    // セット取得率でソート(昇順)します
     ratios.sort((a, b) => b.ratio - a.ratio);
     for (const ratio of ratios) {
+      // セット取得率の高いプレイヤーから ranking に追加します
       ranking.push(players.find((p) => p.name === ratio.name));
     }
   }
@@ -133,11 +141,9 @@ function createLeague(name, matches, ranking) {
         rowPlayer === colPlayer
           ? "<td>-</td>"
           : `<td>${getResult(matches, rowPlayer, colPlayer)}</td>`;
-
-      // html += `<td>xx</td>`;
-      // html += `<td>${ranking.findIndex((r) => r.name === rowPlayer)}</td>`;
     }
 
+    // 順位を追加します
     html += `<td>${ranking.findIndex((r) => r.name === rowPlayer) + 1}</td>`;
     html += "</tr>";
   }
@@ -150,19 +156,21 @@ function createLeague(name, matches, ranking) {
 }
 
 async function main() {
-  let rows = "";
+  const filenames = ["S1", "S2", "S3", "S4"];
 
-  for (name of ["S1", "S2", "S3", "S4"]) {
+  let table = "";
+  // 表示したい順番にファイル名を追加します
+  for (name of filenames) {
     // csvファイル読んでパース
     const matches = parseLeagueFile(`data/${name}.csv`);
     const ranking = getRanking(matches);
     // リーグ表作成
-    rows += createLeague(name, matches, ranking);
+    table += createLeague(name, matches, ranking);
   }
 
   let html = fs.readFileSync("template/index.html", "utf8");
 
-  html = html.replace("{{TABLE}}", rows);
+  html = html.replace("{{TABLE}}", table);
 
   fs.writeFileSync("output/index.html", html);
 
