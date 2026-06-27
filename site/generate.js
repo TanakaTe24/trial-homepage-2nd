@@ -104,7 +104,6 @@ function getRanking(matches) {
       ranking.push(players.find((p) => p.name === ratio.name));
     }
   }
-  console.log(ranking);
   return ranking;
 }
 
@@ -119,9 +118,11 @@ function createLeague(name, matches, ranking) {
             <tr>
                 <th></th>
     `;
+  // 1行目(対戦相手)
   for (const player of players) {
     html += `<th>${player}</th>`;
   }
+  html += `<th>順位</th>`;
 
   html += "</tr>";
   for (const rowPlayer of players) {
@@ -132,8 +133,12 @@ function createLeague(name, matches, ranking) {
         rowPlayer === colPlayer
           ? "<td>-</td>"
           : `<td>${getResult(matches, rowPlayer, colPlayer)}</td>`;
+
+      // html += `<td>xx</td>`;
+      // html += `<td>${ranking.findIndex((r) => r.name === rowPlayer)}</td>`;
     }
 
+    html += `<td>${ranking.findIndex((r) => r.name === rowPlayer) + 1}</td>`;
     html += "</tr>";
   }
   html += `
@@ -147,7 +152,7 @@ function createLeague(name, matches, ranking) {
 async function main() {
   let rows = "";
 
-  for (name of ["S1"]) {
+  for (name of ["S1", "S2", "S3", "S4"]) {
     // csvファイル読んでパース
     const matches = parseLeagueFile(`data/${name}.csv`);
     const ranking = getRanking(matches);
