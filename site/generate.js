@@ -94,11 +94,11 @@ function getRanking(matches) {
       let lose = 0;
       for (const match of matches) {
         if (name === match.player1 && names.has(match.player2)) {
-          let [w, l] = match.result.split("-").map(Number);
+          const [w, l] = match.result.split("-").map(Number);
           win += w;
           lose += l;
         } else if (name === match.player2 && names.has(match.player1)) {
-          let [l, w] = match.result.split("-").map(Number);
+          const [l, w] = match.result.split("-").map(Number);
           win += w;
           lose += l;
         }
@@ -159,11 +159,12 @@ function createLeague(name, matches, ranking) {
 async function main() {
   const filenames = ["S1", "S2", "S3", "S4"];
 
-  let table = "";
   let link = "";
+  let table = "";
   // 表示したい順番にファイル名を追加します
   for (name of filenames) {
     link += `<a href="#${name}">${name}リーグ</a><br>`;
+
     // csvファイル読んでパース
     const matches = parseLeagueFile(`data/${name}.csv`);
     const ranking = getRanking(matches);
@@ -172,7 +173,6 @@ async function main() {
   }
 
   let html = fs.readFileSync("template/index.html", "utf8");
-
   html = html.replace("{{LINK}}", link);
   html = html.replace("{{TABLE}}", table);
 
