@@ -1,47 +1,99 @@
 const fs = require("fs");
 
-const csv = fs.readFileSync("data/S1.csv", "utf8");
+// ファイルからリーグ結果データをパースします
+function parseLeagueFile(file) {
+    const csv = fs.readFileSync(file, "utf8");
 
-const lines = csv.trim().split("\n");
+    const lines = csv.trim().split("\n");
 
-lines.shift(); // ヘッダー削除
+    lines.shift(); // ヘッダー削除
 
-let rows = "";
-
-rows += "<h1>S1リーグ</h1>";
-rows += `
-    <table>
-        <thead>
-            <tr>
-                <th>選手1</th>
-                <th>選手2</th>
-                <th>結果</th>
-            </tr>
-        </thead>
-        <tbody>
-`;
-
-for (const line of lines) {
-    const [p1, p2, result] = line.split(",");
-
-    rows += `
-<tr>
-    <td>${p1}</td>
-    <td>${p2}</td>
-    <td>${result}</td>
-</tr>`;
+    const results = [];
+    for (line of lines) {
+        const [player1, player2, result] = line.split(",");
+        results.push({player1: player1.trim(), player2: player2.trim(), result: result.trim()});
+    }
+    return results;
 }
 
-rows += `
-        </tbody>
-    </table>
-`;
+// 対戦相手側の結果(セットカウント)に変換します
+function reverseResult(result) {
+    const [a, b] = result.split("-");
+    return `${b}-${a}`;
+}
 
+// 指定したプレイヤーもしくは対戦相手側の結果を返却します
+function getResult(matches, player1, player2) {
+    const match = matches.find(m =>
+        (m.player1 === player1 && m.player2 === player2) ||
+        (m.player1 === player2 && m.player2 === player1)
+    );
 
-let html = fs.readFileSync("template/index.html", "utf8");
+    if (!match) {
+        return "";
+    }
 
-html = html.replace("{{TABLE}}", rows);
+    return match.player1 === player1
+        ? match.result
+        : reverseResult(match.result);
+}
 
-fs.writeFileSync("output/index.html", html);
+// リーグ結果データからリーグ表を作成します
+function createLeague(name, matches) {
+    const players = [...new Set(
+        matches.flatMap(m => [m.player1, m.player2])
+    )];
 
-console.log("HTML生成完了");
+    let html = `
+    <section id="${name}">
+        <h2>${name}リーグ</h2>
+        <table>
+            <tr>
+                <th></th>
+    `;
+    for (const player of players) {
+        html += `<th>${player}</th>`;
+    }
+
+    html += "</tr>";
+    for (const rowPlayer of players) {
+
+        html += `<tr><th>${rowPlayer}</th>`;
+
+        for (const colPlayer of players) {
+
+            html += rowPlayer === colPlayer
+                ? "<td>-</td>"
+                : `<td>${getResult(matches, rowPlayer, colPlayer)}</td>`;
+        }
+
+        html += "</tr>";
+    }
+    html += `
+        </table>
+    </section>
+    `;
+
+    return html;
+}
+
+async function main() {
+    let rows = "";
+
+    for (name of ["S1", "S2"]) {
+        // csvファイル読んでパース
+        const matches = parseLeagueFile(`data/${name}.csv`);
+        // リーグ表作成
+        rows += createLeague(name, matches);
+    }
+
+    let html = fs.readFileSync("template/index.html", "utf8");
+
+    html = html.replace("{{TABLE}}", rows);
+
+    fs.writeFileSync("output/index.html", html);
+
+    console.log("HTML生成完了");
+}
+
+main();
